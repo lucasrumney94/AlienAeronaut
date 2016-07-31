@@ -6,5 +6,12 @@ using System.Collections;
 /// </summary>
 public class BlockGenerator : MonoBehaviour {
 
+    public int BuildingCount;
     public BuildingGenerator[] buildings;
+
+    public void Generate(int count) //Should this take in a reference to the surrounding blocks?
+    {
+        BuildingCount = count;
+        //Create a random array of points, and form buildings from this array and the arrays of bordering blocks
+    }
 }
