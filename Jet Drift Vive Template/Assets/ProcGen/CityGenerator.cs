@@ -72,6 +72,11 @@ public struct Int2
     {
         return base.GetHashCode();
     }
+
+    public override string ToString()
+    {
+        return string.Format("Int2 ({0}, {1})", x, y);
+    }
 }
 
 /// <summary>
@@ -124,6 +129,16 @@ public struct IntRect
         }
     }
 
+    public int InclusiveWidth
+    {
+        get { return Width + 1; }
+    }
+
+    public int InclusiveHeight
+    {
+        get { return Height + 1; }
+    }
+
     public int Top
     {
         get { return TopRight.y; }
@@ -149,6 +164,36 @@ public struct IntRect
         _BottomLeft = bottomLeft;
         _TopRight = topRight;
     }
+
+    public bool Contains(Int2 index)
+    {
+        if (Left <= index.x && index.x <= Right && Bottom <= index.y && index.y <= Top)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Returns a new IntRect with both corners shrunk by [layers]
+    /// </summary>
+    /// <param name="original"></param>
+    /// <param name="Layers"></param>
+    /// <returns></returns>
+    public IntRect Shrink(Int2 Layers)
+    {
+        Int2 newBottomLeft = new Int2(Left + Layers.x, Bottom + Layers.y);
+        Int2 newTopRight = new Int2(Right - Layers.x, Top - Layers.y);
+        return new IntRect(newBottomLeft, newTopRight);
+    }
+
+    public override string ToString()
+    {
+        return string.Format("Bottom Left at {0}, Top Right at {1}", BottomLeft.ToString(), TopRight.ToString());
+    }
 }
 
 /// <summary>
@@ -169,14 +214,17 @@ public class CityGenerator : MonoBehaviour {
 
     public int loadedAreaSize = 8; //Edge length of the square of loaded blocks, roughly centered around the player
 
-    private List<List<BlockGenerator>> cityBlocks; //Should look at other options for storing large grid of data
-    //public List<List<BlockGenerator>> loadedBlocks; Needed? Should just disable the gameObject of blocks out of range
+    public BlockGrid cityBlocks;
+    public IntRect loadedArea;
+    private List<BlockGenerator> loadedBlocks;
 
     void Start()
     {
         //Generate start area
-        IntRect startingRange = GetLoadedBlocksRange(playerPosition);
-        cityBlocks = new List<List<BlockGenerator>> (startingRange.Width);
+        loadedBlocks = new List<BlockGenerator>();
+        IntRect startingRange = GetLoadedBlocksRange(playerPosition, loadedAreaSize);
+        loadedArea = startingRange;
+        cityBlocks = new BlockGrid(50, 50);
         LoadBlocks(startingRange);
     }
 
@@ -185,7 +233,9 @@ public class CityGenerator : MonoBehaviour {
         playerGridPosition = GetBlockIndexAtPosition(playerPosition);
         if (playerGridPosition != lastPlayerGridPosition)
         {
-            //Change what blocks are loaded
+            loadedArea = GetLoadedBlocksRange(playerPosition, loadedAreaSize);
+            LoadBlocks(loadedArea);
+            UnloadBlocks(loadedArea);
         }
 
         lastPlayerGridPosition = playerGridPosition;
@@ -194,48 +244,101 @@ public class CityGenerator : MonoBehaviour {
     private Int2 GetBlockIndexAtPosition(Vector3 position)
     {
         //Assuming that block [0, 0] will be placed at (0, 0, 0)
-        return new Int2(Mathf.FloorToInt(position.x / blockSize), Mathf.FloorToInt(position.y / blockSize)); //Will this be incorrect for negative values of position.{x, y}?
+        return new Int2(Mathf.FloorToInt(position.x / blockSize), Mathf.FloorToInt(position.z / blockSize)); //Will this be incorrect for negative values of position.{x, y}?
     }
 
     private Vector3 GetPositionAtBlockIndex(Int2 index)
     {
-        return new Vector3(index.x * blockSize, index.y * blockSize, 0f);
+        return new Vector3(index.x * blockSize, 0f, index.y * blockSize);
     }
 
-    private IntRect GetLoadedBlocksRange(Vector3 center)
+    private IntRect GetLoadedBlocksRange(Vector3 center, int radius)
     {
         Vector3 bottomLeft = center;
-        bottomLeft.x -= (float)loadedAreaSize * blockSize / 2f;
-        bottomLeft.y -= (float)loadedAreaSize * blockSize / 2f;
+        bottomLeft.x -= (float)radius * blockSize;
+        bottomLeft.z -= (float)radius * blockSize;
 
         Vector3 topRight = center;
-        topRight.x += (float)loadedAreaSize * blockSize / 2f;
-        topRight.y += (float)loadedAreaSize * blockSize / 2f;
+        topRight.x += (float)radius * blockSize;
+        topRight.z += (float)radius * blockSize;
 
         return new IntRect(GetBlockIndexAtPosition(bottomLeft), GetBlockIndexAtPosition(topRight));
     }
 
+    /// <summary>
+    /// Adds blocks in range to loadedBlocks, creating new blocks if they don't exist yet, and calling Generate() on blocks that should be visable
+    /// </summary>
+    /// <param name="range"></param>
     private void LoadBlocks(IntRect range)
     {
-        for (int x = range.Left; x < range.Right; x++)
+        IntRect generatedArea = range.Shrink(new Int2(1, 1));
+        //Initialize all blocks, with a one-wide buffer edge between null blocks and generated geometry
+        for (int x = range.Left; x <= range.Right; x++)
         {
-            for (int y = range.Bottom; y < range.Top; y++)
+            for (int y = range.Bottom; y <= range.Top; y++)
             {
-                if (cityBlocks[x][y] == null)
+                if (cityBlocks.BlockInRange(x, y))
                 {
-                    GenerateBlock(new Int2(x, y));
+                    BlockGenerator currentBlock = cityBlocks.GetBlock(x, y);
+                    if (currentBlock == null)
+                    {
+                        currentBlock = CreateBlock(new Int2(x, y));
+                        loadedBlocks.Add(currentBlock);
+                    }
+                    else
+                    {
+                        currentBlock.WakeUp();
+                        loadedBlocks.Add(currentBlock);
+                    }
+                }
+            }
+        }
+
+        //Generate geometry inside buffer edge
+        for (int x = generatedArea.Left; x <= generatedArea.Right; x++)
+        {
+            for (int y = generatedArea.Bottom; y <= generatedArea.Top; y++)
+            {
+                if (cityBlocks.BlockInRange(x, y) && cityBlocks.GetBlock(x, y) != null)
+                {
+                    cityBlocks.GetBlock(x, y).Generate();
                 }
             }
         }
     }
 
-    private void GenerateBlock(Int2 index)
+    /// <summary>
+    /// Removes from loadedBlocks and disables all blocks outside of range
+    /// </summary>
+    /// <param name="range"></param>
+    private void UnloadBlocks(IntRect range) //Totally fucked
+    {
+        List<BlockGenerator> newLoadedBlocks = new List<BlockGenerator>();
+        foreach (BlockGenerator block in loadedBlocks)
+        {
+            if (range.Contains(block.indexPosition))
+            {
+                newLoadedBlocks.Add(block);
+            }
+            else
+            {
+                block.Disable();
+            }
+        }
+
+        loadedBlocks = newLoadedBlocks;
+    }
+
+    private BlockGenerator CreateBlock(Int2 index)
     {
         Vector3 position = GetPositionAtBlockIndex(index);
 
         BlockGenerator newGenerator = Instantiate(BlockGeneratorPrefab).GetComponent<BlockGenerator>();
+        cityBlocks.SetBlock(index.x, index.y, newGenerator);
         newGenerator.transform.SetParent(this.transform);
         newGenerator.transform.position = position;
-        newGenerator.Generate(Random.Range(minBuildingsPerBlock, maxBuildingsPerBlock));
+        newGenerator.Initialize(Random.Range(minBuildingsPerBlock, maxBuildingsPerBlock), index);
+
+        return newGenerator;
     }
 }
