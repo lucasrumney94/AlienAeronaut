@@ -118,7 +118,7 @@ public class BlockGrid {
     /// <param name="x"></param>
     /// <param name="y"></param>
     /// <returns></returns>
-    public BlockGenerator[,] GetAdjacentBlocks(int x, int y)
+    public BlockGenerator[,] GetAdjacentBlocks(Int2 position)
     {
         BlockGenerator[,] adjacent = new BlockGenerator[3, 3];
 
@@ -126,7 +126,7 @@ public class BlockGrid {
         {
             for (int j = 0; j < 3; j++)
             {
-                adjacent[i, j] = GetBlock(i - 1, j - 1);
+                adjacent[i, j] = GetBlock(position.x + i - 1, position.y + j - 1);
             }
         }
 

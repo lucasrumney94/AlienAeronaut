@@ -54,7 +54,7 @@ MonoBehaviour:
   playerPosition: {x: 0, y: 0, z: 0}
   BlockGeneratorPrefab: {fileID: 1000012668409568, guid: cb051a78c0625e949a0d4cfafedaf79c,
     type: 2}
-  blockSize: 4
-  minBuildingsPerBlock: 60
-  maxBuildingsPerBlock: 120
-  loadedAreaSize: 8
+  blockSize: 10
+  minBuildingsPerBlock: 5
+  maxBuildingsPerBlock: 20
+  loadedAreaSize: 2

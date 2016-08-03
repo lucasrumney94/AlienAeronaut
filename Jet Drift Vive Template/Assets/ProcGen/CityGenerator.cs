@@ -280,16 +280,17 @@ public class CityGenerator : MonoBehaviour {
                 if (cityBlocks.BlockInRange(x, y))
                 {
                     BlockGenerator currentBlock = cityBlocks.GetBlock(x, y);
+
                     if (currentBlock == null)
                     {
                         currentBlock = CreateBlock(new Int2(x, y));
-                        loadedBlocks.Add(currentBlock);
                     }
                     else
                     {
                         currentBlock.WakeUp();
-                        loadedBlocks.Add(currentBlock);
                     }
+
+                    loadedBlocks.Add(currentBlock);
                 }
             }
         }
@@ -301,7 +302,32 @@ public class CityGenerator : MonoBehaviour {
             {
                 if (cityBlocks.BlockInRange(x, y) && cityBlocks.GetBlock(x, y) != null)
                 {
-                    cityBlocks.GetBlock(x, y).Generate();
+                    BlockGenerator[,] surroundingBlocks = cityBlocks.GetAdjacentBlocks(new Int2(x, y));
+                    List<Vector3> surroundingPoints = new List<Vector3>();
+                    for (int i = 0; i < 3; i++) //Loop through surroundingBlocks
+                    {
+                        for (int j = 0; j < 3; j++)
+                        {
+                            if (!(i == 1 && j == 1)) //Skip middle block because it is the active one
+                            {
+                                if (surroundingBlocks[i, j] != null && surroundingBlocks[i, j].pointsSet == true) //If the block exists and has been initialized
+                                {
+                                    //Debug.Log("Block at " + cityBlocks.GetBlock(x, y).indexPosition + " is surrounded by " + surroundingBlocks[i, j].indexPosition);
+
+                                    //Offset each point in pointlist by the position of the surrounding block relative to the center
+                                    Vector3[] pointList = surroundingBlocks[i, j].pointList;
+                                    List<Vector3> offsetPointlist = new List<Vector3>();
+                                    for (int point = 0; point < pointList.Length; point++)
+                                    {
+                                        Vector3 offset = new Vector3((i - 1) * blockSize, 0f, (j - 1) * blockSize);
+                                        offsetPointlist.Add(pointList[point] + offset);
+                                    }
+                                    surroundingPoints.AddRange(offsetPointlist);
+                                }
+                            }
+                        }
+                    }
+                    cityBlocks.GetBlock(x, y).Generate(surroundingPoints.ToArray());
                 }
             }
         }
@@ -337,7 +363,7 @@ public class CityGenerator : MonoBehaviour {
         cityBlocks.SetBlock(index.x, index.y, newGenerator);
         newGenerator.transform.SetParent(this.transform);
         newGenerator.transform.position = position;
-        newGenerator.Initialize(Random.Range(minBuildingsPerBlock, maxBuildingsPerBlock), index);
+        newGenerator.Initialize(Random.Range(minBuildingsPerBlock, maxBuildingsPerBlock), blockSize, index);
 
         return newGenerator;
     }

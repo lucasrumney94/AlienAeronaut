@@ -4,6 +4,14 @@ using System.Collections.Generic;
 
 public static class VoroniMeshGenerator {
 
+    /// <summary>
+    /// Needs to be setup to take a pre-existing list of points as delaunayVerts
+    /// Takes a mesh, a size on the [x, z] plane, and an array of vertices of any length, then returns a mesh that represents the Voroni regions of those points.
+    /// </summary>
+    /// <param name="original"></param>
+    /// <param name="width"></param>
+    /// <param name="height"></param>
+    /// <param name="regions"></param>
     public static void GenerateVoroniMesh(Mesh original, float width, float height, int regions)
     {
         Vector3[] delaunayVerts;
@@ -12,8 +20,8 @@ public static class VoroniMeshGenerator {
         int[] delaunayTris;
         int[] voroniTris;
 
-        delaunayVerts = PlacePoints(width, height, regions);
-        delaunayTris = CreateDelaunayTriangles(delaunayVerts, width, height);
+        delaunayVerts = GeneratePointsList(width, height, regions);
+        delaunayTris = CreateDelaunayTriangles(delaunayVerts, Vector3.zero, new Vector3(width, 0f, height));
 
         circumcenters = FindCircumcenters(delaunayVerts, delaunayTris);
 
@@ -27,6 +35,9 @@ public static class VoroniMeshGenerator {
         //Shift verts to be centered on origin
         ShiftToCenter(voroniVerts, width, height);
 
+        //Rotate verts 90 degrees around x-axis so the mesh is flat
+        //RotateAroundXAxis(voroniVerts);
+
         original.Clear();
 
         original.name = "Voroni Regions";
@@ -34,15 +45,59 @@ public static class VoroniMeshGenerator {
         original.triangles = voroniTris;
     }
 
-    private static Vector3[] PlacePoints(float width, float height, int length)
+    /// <summary>
+    /// Takes a list of points to return as seperate voroni region meshes, as well as a list of control points to constrain the size of the created voroni regions
+    /// Can also take a spacing value between 0 and 1, which adds a scaled space between regions
+    /// </summary>
+    /// <param name="points"></param>
+    /// <param name="controlPoints"></param>
+    /// <param name="width"></param>
+    /// <param name="height"></param>
+    /// <param name="roadSize"></param>
+    /// <returns></returns>
+    public static Mesh[] GenerateVoroniIslands(Vector3[] points, Vector3[] controlPoints, Vector3 bottomLeftCorner, Vector3 topRightCorner, float width, float height, float roadSize, out Vector3[] origins)
+    {
+        Vector3[] delaunayVerts;
+        Vector3[] circumcenters;
+        Vector3[] voroniVerts;
+        int[] delaunayTris;
+        int[] voroniTris;
+
+        List<Vector3> composedPoints = new List<Vector3>();
+        composedPoints.AddRange(points);
+        composedPoints.AddRange(controlPoints);
+        delaunayVerts = composedPoints.ToArray();
+
+        delaunayTris = CreateDelaunayTriangles(delaunayVerts, bottomLeftCorner, topRightCorner);
+
+        circumcenters = FindCircumcenters(delaunayVerts, delaunayTris);
+
+        List<Vector3> voroniVertsList = new List<Vector3>();
+        voroniVertsList.AddRange(delaunayVerts);
+        voroniVertsList.AddRange(circumcenters);
+        voroniVerts = voroniVertsList.ToArray();
+
+        voroniTris = CreateVoroniTriangles(delaunayTris, ref voroniVerts, circumcenters.Length);
+
+        //Shift verts to be centered on origin
+        ShiftToCenter(voroniVerts, width, height);
+
+        //Split each group of connected triangles into a seperate mesh
+        Vector3[] originsPassedToSplitMethod = new Vector3[0];
+        Mesh[] splitMeshes = SplitVoroniIslands(voroniVerts, voroniTris, points.Length, out originsPassedToSplitMethod);
+        origins = originsPassedToSplitMethod;
+        return splitMeshes;
+    }
+
+    public static Vector3[] GeneratePointsList(float width, float height, int length)
     {
         Vector3[] pointsList = new Vector3[length];
         for (int i = 0; i < length; i++)
         {
             Vector3 position = new Vector3();
             position.x = Random.Range(0, width);
-            position.y = Random.Range(0, height);
-            position.z = 0;
+            position.y = 0;
+            position.z = Random.Range(0, height);
             pointsList[i] = position;
         }
 
@@ -73,10 +128,18 @@ public static class VoroniMeshGenerator {
 
     private static void ShiftToCenter(Vector3[] points, float width, float height)
     {
-        Vector3 shift = new Vector3(width / 2f, height / 2f);
+        Vector3 shift = new Vector3(width / 2f, 0f, height / 2f);
         for (int i = 0; i < points.Length; i++)
         {
             points[i] -= shift;
+        }
+    }
+
+    private static void RotateAroundXAxis(Vector3[] points)
+    {
+        for (int i = 0; i < points.Length; i++)
+        {
+            points[i] = new Vector3(points[i].x, 0f, points[i].y);
         }
     }
 
@@ -85,7 +148,7 @@ public static class VoroniMeshGenerator {
     /// <summary>
     /// Uses the Bowyer-Watson Algorithm to generate a Delaunay Triangulation, from which a Voroni Diagram can be derived
     /// </summary>
-    private static int[] CreateDelaunayTriangles(Vector3[] vertList, float width, float height)
+    private static int[] CreateDelaunayTriangles(Vector3[] vertList, Vector3 bottomLeftCorner, Vector3 topRightCorner)
     {
         if (vertList.Length < 4)
         {
@@ -97,11 +160,11 @@ public static class VoroniMeshGenerator {
         List<int> triangles = new List<int>();
 
         //Generate supertriangle to enclose all points
-        int l = vertices.Count;
-        vertices.Add(Vector3.zero);
-        vertices.Add(Vector3.right * width * 2f);
-        vertices.Add(Vector3.up * height * 2f);
-        AddTriangle(triangles, l, l + 1, l + 2);
+        int vertsLength = vertices.Count;
+        vertices.Add(bottomLeftCorner);
+        vertices.Add(Vector3.right * topRightCorner.x * 2f);
+        vertices.Add(Vector3.forward * topRightCorner.z * 2f);
+        AddTriangle(triangles, vertsLength, vertsLength + 1, vertsLength + 2);
 
         //For each point
         for (int i = 0; i < vertList.Length; i++)
@@ -187,6 +250,7 @@ public static class VoroniMeshGenerator {
 
     /// <summary>
     /// Returns true if the point 'd' is within the circumcircle formed by the triangle [a,b,c]
+    /// Only works if the vertices are ordered counterclockwise
     /// Uses the determanent formula from wikipedia.org/wiki/Delaunay_triangulation
     /// </summary>
     /// <param name="a"></param>
@@ -197,14 +261,14 @@ public static class VoroniMeshGenerator {
     private static bool PointInsideCircumcircle(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
     {
         float A = a.x - d.x;
-        float B = a.y - d.y;
-        float C = (Mathf.Pow(a.x, 2) - Mathf.Pow(d.x, 2)) + (Mathf.Pow(a.y, 2) - Mathf.Pow(d.y, 2));
+        float B = a.z - d.z;
+        float C = (Mathf.Pow(a.x, 2) - Mathf.Pow(d.x, 2)) + (Mathf.Pow(a.z, 2) - Mathf.Pow(d.z, 2));
         float D = b.x - d.x;
-        float E = b.y - d.y;
-        float F = (Mathf.Pow(b.x, 2) - Mathf.Pow(d.x, 2)) + (Mathf.Pow(b.y, 2) - Mathf.Pow(d.y, 2));
+        float E = b.z - d.z;
+        float F = (Mathf.Pow(b.x, 2) - Mathf.Pow(d.x, 2)) + (Mathf.Pow(b.z, 2) - Mathf.Pow(d.z, 2));
         float G = c.x - d.x;
-        float H = c.y - d.y;
-        float I = (Mathf.Pow(c.x, 2) - Mathf.Pow(d.x, 2)) + (Mathf.Pow(c.y, 2) - Mathf.Pow(d.y, 2));
+        float H = c.z - d.z;
+        float I = (Mathf.Pow(c.x, 2) - Mathf.Pow(d.x, 2)) + (Mathf.Pow(c.z, 2) - Mathf.Pow(d.z, 2));
         float determinant = ((A * E * I) + (B * F * G) + (C * D * H)) - ((C * E * G) + (B * D * I) + (A * F * H));
 
         //Debug.Log(determinant);
@@ -254,13 +318,13 @@ public static class VoroniMeshGenerator {
     private static bool FlipForCounterClockwiseOrder(Vector3 p1, Vector3 p2, Vector3 p3)
     {
         Vector3 p2xp3 = Vector3.Cross(p2 - p1, p3 - p1);
-        if (p2xp3.z > 0f)
+        if (p2xp3.y > 0f)
         {
-            return false;
+            return true;
         }
         else
         {
-            return true;
+            return false;
         }
     }
 
@@ -305,8 +369,8 @@ public static class VoroniMeshGenerator {
             Vector3 p3 = vertices[triangles[t + 2]];
 
             //Find slope of 2 of the triangle edges
-            float m1 = (p2.y - p1.y) / (p2.x - p1.x);
-            float m2 = (p3.y - p1.y) / (p3.x - p1.x);
+            float m1 = (p2.z - p1.z) / (p2.x - p1.x);
+            float m2 = (p3.z - p1.z) / (p3.x - p1.x);
             //To find the slope of the perpendicular bisector of a side, take the negative of the inverse
             m1 = -1f / m1;
             m2 = -1f / m2;
@@ -314,8 +378,8 @@ public static class VoroniMeshGenerator {
             Vector3 bisect1 = (p1 + p2) / 2f;
             Vector3 bisect2 = (p1 + p3) / 2f;
             //Find the y-axis intercept of the perpendicular bisectors
-            float b1 = bisect1.y - (m1 * bisect1.x);
-            float b2 = bisect2.y - (m2 * bisect2.x);
+            float b1 = bisect1.z - (m1 * bisect1.x);
+            float b2 = bisect2.z - (m2 * bisect2.x);
 
             //Find the value of x where the bisectors intersect
             float x = (b2 - b1) / (m1 - m2);
@@ -324,7 +388,7 @@ public static class VoroniMeshGenerator {
             float y = (m1 * x) + b1;
 
             //Create a vector from x and y
-            Vector3 pos = new Vector3(x, y, 0f);
+            Vector3 pos = new Vector3(x, 0f, y);
 
             //Assign to the centers list
             centers[i] = pos;
@@ -449,6 +513,132 @@ public static class VoroniMeshGenerator {
         vertices = splitVertices.ToArray();
 
         return triangles.ToArray();
+    }
+
+    #endregion
+
+    #region Island Splitting
+
+    /// <summary>
+    /// Takes a triangle and vertex array created by CreateVoroniTriangles() and returns an array of meshes, one for each seperate island in the voroni triangulation
+    /// Also takes an output origins list, to record the relative positions of the new mesh array to the original
+    /// </summary>
+    /// <param name="vertices"></param>
+    /// <param name="triangles"></param>
+    /// <param name="numIslands"></param>
+    /// <returns></returns>
+    private static Mesh[] SplitVoroniIslands(Vector3[] vertices, int[] triangles, int numIslands, out Vector3[] origins)
+    {
+        Mesh[] islands = new Mesh[numIslands];
+        origins = new Vector3[numIslands];
+
+        //Loop through each vertex used to generate the original mesh, which are always at [0 to numIslands] in the vertex list
+        for (int i = 0; i < numIslands; i++)
+        {
+            List<int> connectedTris = new List<int>(); //Elements of this list refer to indices in vertices
+            List<int> remappedTris = new List<int>(); //Elements of this list refer to indices in connectedVertices
+
+            //Get the offset of the new mesh
+            Vector3 centerPoint = vertices[i];
+            origins[i] = centerPoint;
+
+            //Will be assigned to the maximum value within remappedTris, to set the length of the vertex list
+            int maxVertexIndex = 0;
+
+            //Keeps track of which vertex index to assign in remappedTris if the needed vertex index hasn't been used yet
+            int firstUnusedIndex = 0;
+
+            //Add all triangles that contain the center vertex i to a list
+            for (int t = 0; t < triangles.Length; t += 3)
+            {
+                if (triangles[t] == i) //If the triangle contains the current islands center vertex index (triangles produced from the CreateVoroniTriangles() method always have the centerpoint as the first triangle vertex)
+                {
+                    int[] remappedTriangle = new int[3];
+                    //Set each corner of remappedTriangle to be the index of the first occourance of triangles[t] in connectedTris, or to the number of unique indices in remappedTris if triangles[t] is not found
+                    for (int remappedCorner = 0; remappedCorner < 3; remappedCorner++)
+                    {
+                        int vertexIndex;
+                        if (connectedTris.Contains(triangles[t + remappedCorner]))
+                        {
+                            vertexIndex = remappedTris[connectedTris.FindIndex(x => x == triangles[t + remappedCorner])];
+                        }
+                        else
+                        {
+                            vertexIndex = firstUnusedIndex;
+                            firstUnusedIndex++;
+                        }
+                        remappedTriangle[remappedCorner] = vertexIndex;
+
+                        if (vertexIndex > maxVertexIndex)
+                        {
+                            maxVertexIndex = vertexIndex;
+                        }
+                    }
+
+                    //Add the triangle to connectedTris
+                    AddTriangle(connectedTris, triangles[t], triangles[t + 1], triangles[t + 2]);
+                    //Add the remapped triangle to remappedTris
+                    AddTriangle(remappedTris, remappedTriangle[0], remappedTriangle[1], remappedTriangle[2]);
+                }
+            }
+
+            List<Vector3> connectedVertices = new List<Vector3>();
+
+            //Initialize connectedVertices list
+            for (int v = 0; v < maxVertexIndex + 1; v++)
+            {
+                connectedVertices.Add(Vector3.zero);
+            }
+
+            //Assign to connectedVertices, indexed by remappedTris, using the data from vertices, indexed by connectedTris
+            for (int v = 0; v < connectedTris.Count; v++)
+            {
+                connectedVertices[remappedTris[v]] = vertices[connectedTris[v]];
+            }
+
+            //if (i == 0) //So unity doesn't crash when I get this right
+            //{
+            //    Debug.Log((maxVertexIndex + 1) + " vertices, " + (connectedTris.Count / 3) + " tris connected to original, " + (remappedTris.Count / 3) + " tris in new region");
+            //    string connectedTrisString = "";
+            //    string remappedTrisString = "";
+            //    for (int t = 0; t < remappedTris.Count; t++)
+            //    {
+            //        connectedTrisString += connectedTris[t];
+            //        connectedTrisString += ", ";
+            //        remappedTrisString += remappedTris[t];
+            //        remappedTrisString += ", ";
+            //    }
+
+            //    string connectedVertsString = "";
+            //    for (int v = 0; v < connectedVertices.Count; v++)
+            //    {
+            //        connectedVertsString += connectedVertices[v];
+            //        connectedVertsString += ", ";
+            //    }
+
+            //    Debug.Log(connectedVertsString);
+            //    Debug.Log(connectedTrisString);
+            //    Debug.Log(remappedTrisString);
+            //}
+
+            //Subtract centerPoint from each vertex so the center of the voroni region is the origin of the mesh
+            for (int v = 0; v < connectedVertices.Count; v++)
+            {
+                connectedVertices[v] -= centerPoint;
+            }
+
+            //Create a new mesh from connectedVertices and connectedTris
+            Mesh island = new Mesh();
+            island.Clear();
+            island.name = "Voroni Island";
+            island.vertices = connectedVertices.ToArray();
+            island.triangles = remappedTris.ToArray();
+            island.RecalculateNormals();
+
+            islands[i] = island;
+        }
+
+        return islands;
     }
 
     #endregion
