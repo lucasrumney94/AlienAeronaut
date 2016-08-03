@@ -53,9 +53,9 @@ public static class VoroniMeshGenerator {
     /// <param name="controlPoints"></param>
     /// <param name="width"></param>
     /// <param name="height"></param>
-    /// <param name="roadSize"></param>
+    /// <param name="roadWidth"></param>
     /// <returns></returns>
-    public static Mesh[] GenerateVoroniIslands(Vector3[] points, Vector3[] controlPoints, Vector3 bottomLeftCorner, Vector3 topRightCorner, float width, float height, float roadSize, out Vector3[] origins)
+    public static Mesh[] GenerateVoroniIslands(Vector3[] points, Vector3[] controlPoints, Vector3 bottomLeftCorner, Vector3 topRightCorner, float width, float height, float roadWidth, out Vector3[] origins)
     {
         Vector3[] delaunayVerts;
         Vector3[] circumcenters;
@@ -77,7 +77,7 @@ public static class VoroniMeshGenerator {
         voroniVertsList.AddRange(circumcenters);
         voroniVerts = voroniVertsList.ToArray();
 
-        voroniTris = CreateVoroniTriangles(delaunayTris, ref voroniVerts, circumcenters.Length);
+        voroniTris = CreateVoroniTriangles(delaunayTris, ref voroniVerts, circumcenters.Length, roadWidth);
 
         //Shift verts to be centered on origin
         ShiftToCenter(voroniVerts, width, height);
@@ -404,7 +404,7 @@ public static class VoroniMeshGenerator {
     /// <param name="vertices">Array of original vertices with circumcenters appended to the end</param>
     /// <param name="centersLength">The number of points at the end of the vertices list which are circumcenters</param>
     /// <returns></returns>
-    private static int[] CreateVoroniTriangles(int[] delTris, ref Vector3[] vertices, int centersLength)
+    private static int[] CreateVoroniTriangles(int[] delTris, ref Vector3[] vertices, int centersLength, float roadWidth = 0f)
     {
         List<int> triangles = new List<int>();
 
@@ -505,7 +505,7 @@ public static class VoroniMeshGenerator {
                     }
 
                     //Test: slide vertex 10% of the way towards the center of the region
-                    splitVertices[v] = Vector3.Lerp(splitVertices[v], splitVertices[triangles[triIndex]], 0.1f);
+                    splitVertices[v] = Vector3.Lerp(splitVertices[v], splitVertices[triangles[triIndex]], roadWidth);
                 }
             }
         }

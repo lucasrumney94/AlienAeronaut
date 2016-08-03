@@ -12,17 +12,19 @@ public class BlockGenerator : MonoBehaviour {
     public Int2 indexPosition;
 
     public float blockSize;
+    public float roadWidth;
     public int buildingCount;
     public Vector3[] pointList;
     public BuildingGenerator buildingGeneratorPrefab;
     public BuildingGenerator[] buildings;
 
-    public void Initialize(int pointCount, float size, Int2 index)
+    public void Initialize(Int2 index, int buildingCount, float blockSize, float roadWidth)
     {
         indexPosition = index;
-        blockSize = size;
-        buildingCount = pointCount;
-        pointList = VoroniMeshGenerator.GeneratePointsList(size, size, pointCount);
+        this.blockSize = blockSize;
+        this.roadWidth = roadWidth;
+        this.buildingCount = buildingCount;
+        pointList = VoroniMeshGenerator.GeneratePointsList(blockSize, blockSize, buildingCount);
 
         pointsSet = true;
     }
@@ -41,7 +43,7 @@ public class BlockGenerator : MonoBehaviour {
             Vector3[] origins;
             Vector3 bottomLeftCorner = new Vector3(-blockSize, 0f, -blockSize);
             Vector3 topRightCorner = new Vector3(blockSize * 2, 0f, blockSize * 2);
-            Mesh[] buildingBases = VoroniMeshGenerator.GenerateVoroniIslands(pointList, surroundingPoints, bottomLeftCorner, topRightCorner, blockSize, blockSize, 0.2f, out origins);
+            Mesh[] buildingBases = VoroniMeshGenerator.GenerateVoroniIslands(pointList, surroundingPoints, bottomLeftCorner, topRightCorner, blockSize, blockSize, roadWidth, out origins);
 
             for (int i = 0; i < buildingCount; i++)
             {

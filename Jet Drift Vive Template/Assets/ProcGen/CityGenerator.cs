@@ -209,6 +209,10 @@ public class CityGenerator : MonoBehaviour {
     public GameObject BlockGeneratorPrefab;
 
     public float blockSize;
+    [Range(0f, 1f)]
+    public float minRoadWidth;
+    [Range(0f, 1f)]
+    public float maxRoadWidth;
     public int minBuildingsPerBlock;
     public int maxBuildingsPerBlock;
 
@@ -363,7 +367,7 @@ public class CityGenerator : MonoBehaviour {
         cityBlocks.SetBlock(index.x, index.y, newGenerator);
         newGenerator.transform.SetParent(this.transform);
         newGenerator.transform.position = position;
-        newGenerator.Initialize(Random.Range(minBuildingsPerBlock, maxBuildingsPerBlock), blockSize, index);
+        newGenerator.Initialize(index, Random.Range(minBuildingsPerBlock, maxBuildingsPerBlock), blockSize, Random.Range(minRoadWidth, maxRoadWidth));
 
         return newGenerator;
     }
