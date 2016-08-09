@@ -627,12 +627,73 @@ public static class VoroniMeshGenerator {
                 connectedVertices[v] -= centerPoint;
             }
 
+            //Rearrange vertices so they go in a clockwise order from index 1
+            Vector3[] clockwiseVertices = new Vector3[connectedVertices.Count];
+            clockwiseVertices[0] = connectedVertices[0]; //To keep the center in the same position
+            
+            int[] clockwiseVertexIndices = new int[connectedVertices.Count]; //clockwiseVertexIndices[v] stores the index of the vertex that should be ahead of connectedVertices[v]
+            clockwiseVertexIndices[0] = 0; //To keep the center in the same place in the list
+
+            //Find the order the existing vertices should be arranged in so that they flow counter-clockwise from index 1
+            int nextConnectedIndex = 1;
+            for (int v = 1; v < connectedVertices.Count; v++)
+            {
+                //Find the smallest angle between another vertex where the cross product between the v and vOther has a positive y component
+                //First approach used distance instead, but would fail occasionally when the closest vertex was on the other side of the center and farther along the loop than the 'next' vertex
+                float smallestVertexAngle = 360f;
+                int smallestAngleIndex = -1;
+                for (int vOther = 1; vOther < connectedVertices.Count; vOther++) //Foe each other vertex on the region boundary
+                {
+                    if (vOther != nextConnectedIndex) //If not the same vertex
+                    {
+                        if (nextConnectedIndex < 0)
+                        {
+                            Debug.Log("Next connected index was less than 0!");
+                        }
+                        Vector3 cross = Vector3.Cross(connectedVertices[nextConnectedIndex], connectedVertices[vOther]);
+                        if (cross.y >= 0)
+                        {
+                            float angle = Vector3.Angle(connectedVertices[nextConnectedIndex], connectedVertices[vOther]);
+                            if (angle < smallestVertexAngle)
+                            {
+                                smallestVertexAngle = angle;
+                                smallestAngleIndex = vOther;
+                            }
+                        }
+                    }
+                }
+
+                //If smallestAngleIndex has not been assigned to
+                if (smallestAngleIndex == -1)
+                {
+                    //Origin of polygon must lie outside boundaries
+
+                }
+
+                clockwiseVertexIndices[v] = nextConnectedIndex;
+                nextConnectedIndex = smallestAngleIndex;
+            }
+            
+            //Assign to clockwiseVertices and clockwiseTriangles
+            List<int> clockwiseTriangles = new List<int>();
+            for (int v = 1; v < clockwiseVertexIndices.Length; v++)
+            {
+                clockwiseVertices[v] = connectedVertices[clockwiseVertexIndices[v]];
+
+                //Add a new triangle for each outside vertex
+                int v1 = 0;
+                int v2 = v;
+                int wrapVPlusOne = v + 1 < clockwiseVertexIndices.Length ? v + 1 : 1;
+                int v3 = wrapVPlusOne;
+                AddTriangle(clockwiseTriangles, v1, v2, v3);
+            }
+
             //Create a new mesh from connectedVertices and connectedTris
             Mesh island = new Mesh();
             island.Clear();
             island.name = "Voroni Island";
-            island.vertices = connectedVertices.ToArray();
-            island.triangles = remappedTris.ToArray();
+            island.vertices = clockwiseVertices;
+            island.triangles = clockwiseTriangles.ToArray();
             island.RecalculateNormals();
 
             islands[i] = island;

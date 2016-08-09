@@ -89,4 +89,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf8a656985b3be54a917b3eae4689013, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  minHeight: 100
+  maxHeight: 300
+  taper: 0.2
   footprint: {fileID: 0}

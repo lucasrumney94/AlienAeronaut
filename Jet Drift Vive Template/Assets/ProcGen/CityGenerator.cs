@@ -202,12 +202,13 @@ public struct IntRect
 /// </summary>
 public class CityGenerator : MonoBehaviour {
 
-    public Vector3 playerPosition;
+    public Transform playerTransform;
     public Int2 playerGridPosition;
     public Int2 lastPlayerGridPosition;
 
     public GameObject BlockGeneratorPrefab;
 
+    public int citySize;
     public float blockSize;
     [Range(0f, 1f)]
     public float minRoadWidth;
@@ -225,20 +226,26 @@ public class CityGenerator : MonoBehaviour {
     void Start()
     {
         //Generate start area
+        if (playerTransform == null)
+        {
+            playerTransform = this.transform;
+            Debug.LogError("Player could not be found by CityGenerator!");
+        }
+
         loadedBlocks = new List<BlockGenerator>();
-        IntRect startingRange = GetLoadedBlocksRange(playerPosition, loadedAreaSize);
+        IntRect startingRange = GetLoadedBlocksRange(playerTransform.position, loadedAreaSize);
         loadedArea = startingRange;
-        cityBlocks = new BlockGrid(50, 50);
-        LoadBlocks(startingRange);
+        cityBlocks = new BlockGrid(citySize, citySize);
+        LoadBlocks(startingRange, true);
     }
 
     void Update()
     {
-        playerGridPosition = GetBlockIndexAtPosition(playerPosition);
+        playerGridPosition = GetBlockIndexAtPosition(playerTransform.position);
         if (playerGridPosition != lastPlayerGridPosition)
         {
-            loadedArea = GetLoadedBlocksRange(playerPosition, loadedAreaSize);
-            LoadBlocks(loadedArea);
+            loadedArea = GetLoadedBlocksRange(playerTransform.position, loadedAreaSize);
+            LoadBlocks(loadedArea, true);
             UnloadBlocks(loadedArea);
         }
 
@@ -273,17 +280,16 @@ public class CityGenerator : MonoBehaviour {
     /// Adds blocks in range to loadedBlocks, creating new blocks if they don't exist yet, and calling Generate() on blocks that should be visable
     /// </summary>
     /// <param name="range"></param>
-    private void LoadBlocks(IntRect range)
+    private void LoadBlocks(IntRect range, bool wrap = false)
     {
-        IntRect generatedArea = range.Shrink(new Int2(1, 1));
         //Initialize all blocks, with a one-wide buffer edge between null blocks and generated geometry
         for (int x = range.Left; x <= range.Right; x++)
         {
             for (int y = range.Bottom; y <= range.Top; y++)
             {
-                if (cityBlocks.BlockInRange(x, y))
+                if (cityBlocks.BlockInRange(x, y, wrap))
                 {
-                    BlockGenerator currentBlock = cityBlocks.GetBlock(x, y);
+                    BlockGenerator currentBlock = cityBlocks.GetBlock(x, y, wrap);
 
                     if (currentBlock == null)
                     {
@@ -300,13 +306,14 @@ public class CityGenerator : MonoBehaviour {
         }
 
         //Generate geometry inside buffer edge
+        IntRect generatedArea = range.Shrink(new Int2(1, 1)); //Needs to exclude blocks that are at the city border
         for (int x = generatedArea.Left; x <= generatedArea.Right; x++)
         {
             for (int y = generatedArea.Bottom; y <= generatedArea.Top; y++)
             {
                 if (cityBlocks.BlockInRange(x, y) && cityBlocks.GetBlock(x, y) != null)
                 {
-                    BlockGenerator[,] surroundingBlocks = cityBlocks.GetAdjacentBlocks(new Int2(x, y));
+                    BlockGenerator[,] surroundingBlocks = cityBlocks.GetAdjacentBlocks(x, y, true);
                     List<Vector3> surroundingPoints = new List<Vector3>();
                     for (int i = 0; i < 3; i++) //Loop through surroundingBlocks
                     {
@@ -364,7 +371,7 @@ public class CityGenerator : MonoBehaviour {
         Vector3 position = GetPositionAtBlockIndex(index);
 
         BlockGenerator newGenerator = Instantiate(BlockGeneratorPrefab).GetComponent<BlockGenerator>();
-        cityBlocks.SetBlock(index.x, index.y, newGenerator);
+        cityBlocks.SetBlock(index.x, index.y, newGenerator, true);
         newGenerator.transform.SetParent(this.transform);
         newGenerator.transform.position = position;
         newGenerator.Initialize(index, Random.Range(minBuildingsPerBlock, maxBuildingsPerBlock), blockSize, Random.Range(minRoadWidth, maxRoadWidth));

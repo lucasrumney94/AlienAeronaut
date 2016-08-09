@@ -70,8 +70,20 @@ public class BlockGrid {
         _blocks = new BlockGenerator[Width, Height];
     }
 
-    public BlockGenerator GetBlock(int x, int y)
+    /// <summary>
+    /// Gets the block at [x, y], returning null if outside of range
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <returns></returns>
+    public BlockGenerator GetBlock(int x, int y, bool wrap = false)
     {
+        if (wrap)
+        {
+            Int2 wrappedIndex = WrapIndex(x, y);
+            x = wrappedIndex.x;
+            y = wrappedIndex.y;
+        }
         if (BlockInRange(x, y))
         {
             if (x < 0)
@@ -91,8 +103,14 @@ public class BlockGrid {
         }
     }
 
-    public void SetBlock(int x, int y, BlockGenerator block)
+    public void SetBlock(int x, int y, BlockGenerator block, bool wrap = false)
     {
+        if (wrap)
+        {
+            Int2 wrappedIndex = WrapIndex(x, y);
+            x = wrappedIndex.x;
+            y = wrappedIndex.y;
+        }
         if (BlockInRange(x, y))
         {
             if (x < 0)
@@ -117,8 +135,9 @@ public class BlockGrid {
     /// </summary>
     /// <param name="x"></param>
     /// <param name="y"></param>
+    /// <param name="wrap">Should blocks on the opposite edge of the grid be wrapped to?</param>
     /// <returns></returns>
-    public BlockGenerator[,] GetAdjacentBlocks(Int2 position)
+    public BlockGenerator[,] GetAdjacentBlocks(int x, int y, bool wrap = false)
     {
         BlockGenerator[,] adjacent = new BlockGenerator[3, 3];
 
@@ -126,15 +145,29 @@ public class BlockGrid {
         {
             for (int j = 0; j < 3; j++)
             {
-                adjacent[i, j] = GetBlock(position.x + i - 1, position.y + j - 1);
+                int adjX = x + i - 1;
+                int adjY = y + j - 1;
+                adjacent[i, j] = GetBlock(adjX, adjY, wrap);
             }
         }
 
         return adjacent;
     }
 
-    public bool BlockInRange(int x, int y)
+    /// <summary>
+    /// Returns if the block at given position exists in the grid
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="wrap">Always returns true when wrap is true</param>
+    /// <returns></returns>
+    public bool BlockInRange(int x, int y, bool wrap = false)
     {
+        if (wrap)
+        {
+            return true;
+        }
+
         if (x > MaxX || x < -MaxX || y > MaxY || y < -MaxY)
         {
             return false;
@@ -143,5 +176,28 @@ public class BlockGrid {
         {
             return true;
         }
+    }
+
+    public Int2 WrapIndex(int x, int y)
+    {
+        while (x < -MaxX)
+        {
+            x += Width;
+        }
+        while (x > MaxX)
+        {
+            x -= Width;
+        }
+
+        while (y < -MaxY)
+        {
+            y += Height;
+        }
+        while (y > MaxY)
+        {
+            y -= Height;
+        }
+
+        return new Int2(x, y);
     }
 }

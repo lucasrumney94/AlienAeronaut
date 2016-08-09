@@ -26,6 +26,8 @@ public class BlockGenerator : MonoBehaviour {
         this.buildingCount = buildingCount;
         pointList = VoroniMeshGenerator.GeneratePointsList(blockSize, blockSize, buildingCount);
 
+        CreateBaseMesh();
+
         pointsSet = true;
     }
 
@@ -50,6 +52,7 @@ public class BlockGenerator : MonoBehaviour {
                 BuildingGenerator newBuilding = Instantiate(buildingGeneratorPrefab);
                 newBuilding.transform.SetParent(transform);
                 newBuilding.SetBaseMesh(buildingBases[i], origins[i]);
+                newBuilding.Generate();
             }
         }
 
@@ -62,5 +65,51 @@ public class BlockGenerator : MonoBehaviour {
     public void Disable()
     {
         gameObject.SetActive(false);
+    }
+
+    private void CreateBaseMesh()
+    {
+        MeshFilter meshFilter = GetComponent<MeshFilter>();
+
+        Mesh baseMesh;
+        if (meshFilter.sharedMesh == null)
+        {
+            baseMesh = new Mesh();
+        }
+        else
+        {
+            baseMesh = meshFilter.sharedMesh;
+        }
+
+        Vector3[] vertices = new Vector3[4];
+
+        vertices[0] = new Vector3(-blockSize / 2f, 0f, -blockSize / 2f);
+        vertices[1] = new Vector3(blockSize / 2f, 0f, -blockSize / 2f);
+        vertices[2] = new Vector3(-blockSize / 2f, 0f, blockSize / 2f);
+        vertices[3] = new Vector3(blockSize / 2f, 0f, blockSize / 2f);
+
+        int[] triangles = new int[6];
+
+        triangles[0] = 0;
+        triangles[1] = 2;
+        triangles[2] = 1;
+
+        triangles[3] = 3;
+        triangles[4] = 1;
+        triangles[5] = 2;
+
+        Vector3[] normals = new Vector3[4];
+        for (int i = 0; i < 4; i++)
+        {
+            normals[i] = Vector3.up;
+        }
+
+        baseMesh.Clear();
+        baseMesh.name = "Block Base";
+        baseMesh.vertices = vertices;
+        baseMesh.triangles = triangles;
+        baseMesh.normals = normals;
+
+        meshFilter.sharedMesh = baseMesh;
     }
 }
