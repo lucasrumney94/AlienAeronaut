@@ -132,7 +132,7 @@ Prefab:
     - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
         type: 2}
       propertyPath: loadedAreaSize
-      value: 2
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
         type: 2}
@@ -168,6 +168,11 @@ Prefab:
         type: 2}
       propertyPath: citySize
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
+        type: 2}
+      propertyPath: wrapLoadedArea
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: b1d24598ab7b93b479159ff4c1ba4596, type: 2}

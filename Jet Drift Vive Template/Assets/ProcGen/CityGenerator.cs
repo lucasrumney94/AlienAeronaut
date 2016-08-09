@@ -218,6 +218,7 @@ public class CityGenerator : MonoBehaviour {
     public int maxBuildingsPerBlock;
 
     public int loadedAreaSize = 8; //Edge length of the square of loaded blocks, roughly centered around the player
+    public bool wrapLoadedArea = false;
 
     public BlockGrid cityBlocks;
     public IntRect loadedArea;
@@ -236,7 +237,7 @@ public class CityGenerator : MonoBehaviour {
         IntRect startingRange = GetLoadedBlocksRange(playerTransform.position, loadedAreaSize);
         loadedArea = startingRange;
         cityBlocks = new BlockGrid(citySize, citySize);
-        LoadBlocks(startingRange, true);
+        LoadBlocks(startingRange, wrapLoadedArea);
     }
 
     void Update()
@@ -245,7 +246,7 @@ public class CityGenerator : MonoBehaviour {
         if (playerGridPosition != lastPlayerGridPosition)
         {
             loadedArea = GetLoadedBlocksRange(playerTransform.position, loadedAreaSize);
-            LoadBlocks(loadedArea, true);
+            LoadBlocks(loadedArea, wrapLoadedArea);
             UnloadBlocks(loadedArea);
         }
 
@@ -306,14 +307,14 @@ public class CityGenerator : MonoBehaviour {
         }
 
         //Generate geometry inside buffer edge
-        IntRect generatedArea = range.Shrink(new Int2(1, 1)); //Needs to exclude blocks that are at the city border
+        IntRect generatedArea = range.Shrink(new Int2(1, 1));
         for (int x = generatedArea.Left; x <= generatedArea.Right; x++)
         {
             for (int y = generatedArea.Bottom; y <= generatedArea.Top; y++)
             {
-                if (cityBlocks.BlockInRange(x, y) && cityBlocks.GetBlock(x, y) != null)
+                if (cityBlocks.BlockInRange(x, y, wrap) && cityBlocks.GetBlock(x, y, wrap) != null)
                 {
-                    BlockGenerator[,] surroundingBlocks = cityBlocks.GetAdjacentBlocks(x, y, true);
+                    BlockGenerator[,] surroundingBlocks = cityBlocks.GetAdjacentBlocks(x, y, wrap);
                     List<Vector3> surroundingPoints = new List<Vector3>();
                     for (int i = 0; i < 3; i++) //Loop through surroundingBlocks
                     {
@@ -338,7 +339,7 @@ public class CityGenerator : MonoBehaviour {
                             }
                         }
                     }
-                    cityBlocks.GetBlock(x, y).Generate(surroundingPoints.ToArray());
+                    cityBlocks.GetBlock(x, y, wrap).Generate(surroundingPoints.ToArray());
                 }
             }
         }
@@ -368,13 +369,14 @@ public class CityGenerator : MonoBehaviour {
 
     private BlockGenerator CreateBlock(Int2 index)
     {
-        Vector3 position = GetPositionAtBlockIndex(index);
+        Int2 wrappedIndex = cityBlocks.WrapIndex(index.x, index.y);
+        Vector3 position = GetPositionAtBlockIndex(wrappedIndex);
 
         BlockGenerator newGenerator = Instantiate(BlockGeneratorPrefab).GetComponent<BlockGenerator>();
-        cityBlocks.SetBlock(index.x, index.y, newGenerator, true);
+        cityBlocks.SetBlock(wrappedIndex.x, wrappedIndex.y, newGenerator, wrapLoadedArea);
         newGenerator.transform.SetParent(this.transform);
         newGenerator.transform.position = position;
-        newGenerator.Initialize(index, Random.Range(minBuildingsPerBlock, maxBuildingsPerBlock), blockSize, Random.Range(minRoadWidth, maxRoadWidth));
+        newGenerator.Initialize(wrappedIndex, Random.Range(minBuildingsPerBlock, maxBuildingsPerBlock), blockSize, Random.Range(minRoadWidth, maxRoadWidth));
 
         return newGenerator;
     }
