@@ -51,12 +51,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8ad58368f9d5694589c5203299f6311, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerPosition: {x: 0, y: 0, z: 0}
+  playerTransform: {fileID: 0}
   BlockGeneratorPrefab: {fileID: 1000012668409568, guid: cb051a78c0625e949a0d4cfafedaf79c,
     type: 2}
-  blockSize: 20
-  minRoadWidth: 0.05
-  maxRoadWidth: 0.15
+  citySize: 10
+  blockSize: 500
+  minRoadWidth: 0
+  maxRoadWidth: 0
   minBuildingsPerBlock: 5
-  maxBuildingsPerBlock: 40
+  maxBuildingsPerBlock: 20
   loadedAreaSize: 3
+  wrapLoadedArea: 1

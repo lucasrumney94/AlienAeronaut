@@ -93,7 +93,7 @@ MonoBehaviour:
   generationDone: 0
   blockSize: 0
   roadWidth: 0
-  topLayerElevation: 50
+  topLayerElevation: 400
   buildingCount: 0
   pointList: []
   buildingGeneratorPrefab: {fileID: 114000011260406778, guid: 4dd3a448fa9243044a242bc17aa340ed,

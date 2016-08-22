@@ -289,53 +289,9 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
         type: 2}
-      propertyPath: loadedAreaSize
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
-        type: 2}
-      propertyPath: maxBuildingsPerBlock
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
-        type: 2}
-      propertyPath: minRoadWidth
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
-        type: 2}
-      propertyPath: maxRoadWidth
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
-        type: 2}
-      propertyPath: minBuildingsPerBlock
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
-        type: 2}
-      propertyPath: blockSize
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
-        type: 2}
       propertyPath: playerTransform
       value: 
       objectReference: {fileID: 911193731}
-    - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
-        type: 2}
-      propertyPath: citySize
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 114000011440515360, guid: b1d24598ab7b93b479159ff4c1ba4596,
-        type: 2}
-      propertyPath: wrapLoadedArea
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1000010572521576, guid: b1d24598ab7b93b479159ff4c1ba4596, type: 2}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: b1d24598ab7b93b479159ff4c1ba4596, type: 2}
   m_IsPrefabParent: 0

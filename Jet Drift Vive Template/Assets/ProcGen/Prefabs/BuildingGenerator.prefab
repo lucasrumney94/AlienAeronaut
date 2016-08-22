@@ -90,9 +90,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: {r: 0, g: 0, b: 0, a: 0}
-  minHeight: 10
-  maxHeight: 30
-  bottomTaper: 0.125
+  minHeight: 100
+  maxHeight: 300
+  bottomTaper: 0.3
   topTaper: 0.33
   replacementMeshes:
   - {fileID: 4300000, guid: 0e7624f8d6296174286d2932f5b8108a, type: 3}
