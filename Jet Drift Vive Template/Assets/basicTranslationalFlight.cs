@@ -5,7 +5,7 @@ public class basicTranslationalFlight : MonoBehaviour {
 
     public float thrustStrength = 1.0f;
 
-    private bool translateControlsActive;
+    public bool translateControlsActive;
     private Transform TranslateSphereTransform;
     private Rigidbody CockpitRigidbody;
 
