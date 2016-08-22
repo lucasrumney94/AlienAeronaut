@@ -21,7 +21,8 @@ public class basicTranslationalFlight : MonoBehaviour {
     {
         if (translateControlsActive)
         {
-            CockpitRigidbody.AddForce(thrustStrength * (TranslateSphereTransform.position - this.gameObject.transform.position));
+            CockpitRigidbody.AddForce(thrustStrength * (this.gameObject.transform.position - TranslateSphereTransform.position));
+
         }    
 	}
 
