@@ -25,9 +25,9 @@ public class basicTranslationalFlight : MonoBehaviour {
         }    
 	}
 
-    void onCollisionEnter(Collision c)
+    void onTriggerEnter(Collider other)
     {
-        if (c.collider.gameObject.tag == "TranslateSphere")
+        if (other.tag.Equals("TranslateSphere"))
         {
             translateControlsActive = true;
         } 
