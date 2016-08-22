@@ -6,6 +6,8 @@ TagManager:
   tags:
   - VRInputManager
   - InteractionSphere
+  - TranslateSphere
+  - Cockpit
   layers:
   - Default
   - TransparentFX
