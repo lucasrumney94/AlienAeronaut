@@ -1,15 +1,21 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 public class FlightController : MonoBehaviour {
 
-	// Use this for initialization
-	void Start () {
-	
+    private ControllerInputTracker vrInput;
+
+
+   
+	void Start ()
+    {
+        vrInput = GameObject.FindGameObjectWithTag("Player").GetComponent<ControllerInputTracker>();
+
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void Update ()
+    {
 	
 	}
 }
