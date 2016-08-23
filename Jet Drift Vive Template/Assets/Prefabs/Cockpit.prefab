@@ -2418,7 +2418,7 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1000013627891768}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
@@ -2432,7 +2432,7 @@ Transform:
   - {fileID: 4000010994649212}
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
 --- !u!4 &4000010714708998
 Transform:
   m_ObjectHideFlags: 1
@@ -3578,7 +3578,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.05
-  far clip plane: 1000
+  far clip plane: 10000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -4601,7 +4601,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bcdeab855ba9be42ad1319a31574e04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  thrustStrength: 2
+  thrustStrength: 20
   translateControlsActive: 0
 --- !u!114 &114000011054368130
 MonoBehaviour:
@@ -6361,7 +6361,7 @@ CapsuleCollider:
   m_GameObject: {fileID: 1000013627891768}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   m_Radius: 1.61
   m_Height: 4.56
   m_Direction: 1
